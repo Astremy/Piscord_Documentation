@@ -101,7 +101,7 @@ class Guild:
 			- 1 : Need email verified
 			- 2 : Register longer than 5 minutes
 			- 3 : In the guild longer than 10 minutes
-			- 4 : Must activate the 2FA (verified phone number)
+			- 4 : Require verified phone number
 	default_message_notifications:
 		The level of messages notification by default
 			- 0 : All messages
@@ -115,6 +115,72 @@ class Guild:
 		List of Guild roles
 	emojis: :class:`Emoji`
 		List of Guild emojis
+	features:
+		Not implemented
+	mfa_level:
+		If the guild requiere MFA
+			- 0 : No
+			- 1 : Yes
+	application_id:
+		If a bot created the server, the id of its application
+	widget_enabled:
+		If the server widget is enabled
+	widget_channel_id:
+		The channel id where the widget generate an invite
+	system_channel_id:
+		The id of channel system messages (boost, welcome)
+	system_channel_flags:
+		A integer representing the system messages enable
+			0 : All system messages
+			1 : Boost notification messages
+			2 : Welcome messages
+			3 : No system messages
+	rules_channel_id:
+		The id of rules channel for public guilds
+	joined_at:
+		The timestamp of guild creation
+	large:
+		If the guild  is considered a large guild
+	unavailable:
+		If the guild is unavaible
+	member_count:
+		The number of guild members
+	voice_states:
+		Not implemented
+	members: :class:`Member`
+		List of guild members
+	channels: :class:`Channel`
+		List of guild channels
+	presences:
+		Not implemented
+	max_presences:
+		Max number of presence for the guild, 25000 by default
+	max_members:
+		Max number of members for the guild
+	max_video_channel_users:
+		Max number of users in a video channel
+	vanity_url_code:
+		Custom url for discord parteners and guild level 3
+	description:
+		Guild description in discover tab
+	banner:
+		Banner of the guild
+	premium_tier:
+		The level of server boosting:
+			- 0 : Level 0
+			- 1 : Level 1
+			- 2 : Level 2
+			- 3 : Level 3
+	premium_subscription_count:
+		The number of guild nitro boosts
+	preferred_locale:
+		The preferred locale of a public guild (for discovery tab)
+	public_updates_channel_id:
+		The staff channel for Discord notices of a public guild
+	approximate_member_count:
+		The approximate number of guild members
+	approximate_presence_count:
+		The approximate number of connected guild members
 	"""
 
 	def __init__(self, guild, bot):
@@ -152,7 +218,7 @@ class Guild:
 		self.members = [Member(member,bot) for member in guild.get("members",[])]
 		self.channels = [Channel(channel,bot,guild=self) for channel in guild.get("channels",[])]
 		self.presences = guild.get("presences",[]) # To Do
-		self.max_presences = guild.get("max_presences")
+		self.max_presences = guild.get("max_presences",25000)
 		self.max_members = guild.get("max_members")
 		self.max_video_channel_users = guild.get("max_video_channel_users")
 		self.vanity_url_code = guild.get("vanity_url_code")
@@ -175,39 +241,95 @@ class Guild:
 			return "Guild"
 
 	def get_channels(self):
+
+		"""
+		Return a list of :class:`Channel` of the guild (deprecated, use Guild.channels)
+		"""
+
 		channels = self.__bot.api(f"/guilds/{self.id}/channels")
 		return [Channel(channel,self.__bot) for channel in channels]
 
 	def get_roles(self):
+
+		"""
+		Return a list of :class:`Role` of the guild (deprecated, use Guild.roles)
+		"""
+
 		roles = self.__bot.api(f"/guilds/{self.id}/roles")
 		return [Role(role,self.__bot) for role in roles]
 
 	def get_invites(self):
+
+		"""
+		Return a list of :class:`Invite` of the guild
+		"""
+
 		invites = self.__bot.api(f"/guilds/{self.id}/invites")
 		return [Invite(invite,self.__bot) for invite in invites]
 
 	def get_members(self, limit=100, after=0):
+
+		"""
+		Return a list of :class:`Member` of the guild (deprecated, use Guild.members)
+		"""
+
 		members = self.__bot.api(f"/guilds/{self.id}/members","GET",params={"limit":limit,"after":after})
 		return [Member({**member,"guild_id":self.id},self.__bot) for member in members]
 
 	def get_member(self,user_id):
+
+		"""
+		returns a specific :class:`Member` using their id
+		"""
+
 		return Member({**self.__bot.api(f"/guilds/{self.id}/members/{user_id}"),"guild_id":self.id},self.__bot)
 
 	def get_bans(self):
+
+		"""
+		Return a list of :class:`Ban` of the guild
+		"""
+
 		bans = self.__bot.api(f"/guilds/{self.id}/bans")
 		return [Ban(ban,self.__bot) for ban in bans]
 
 	def get_ban(self, user_id):
+
+		"""
+		returns a specific :class:`Ban` using the id of the banned user
+		"""
+
 		return Ban(self.__bot.api(f"/guilds/{self.id}/bans/{user_id}"),self.__bot)
 
 	def get_webhooks(self):
+
+		"""
+		Return a list of :class:`Webhook` of the guild
+		"""
+
 		webhooks = self.__bot.api(f"/guilds/{self.id}/webhooks")
 		return [Webhook(webhook,self.__bot) for webhook in webhooks]
 
 	def create_channel(self,**kwargs):
+
+		"""
+		Create a guild channel, with parameters.
+		Parameters : https://discord.com/developers/docs/resources/guild#create-guild-channel
+
+		Return :class:`Channel`
+		"""
+
 		return Channel(self.__bot.api(f"/guilds/{self.id}/channels", "POST", json=kwargs),self.__bot)
 
 	def create_role(self,**kwargs):
+
+		"""
+		Create a guild role, with parameters.
+		Parameters : https://discord.com/developers/docs/resources/guild#create-guild-role
+
+		Return :class:`Role`
+		"""
+
 		return Role({**self.__bot.api(f"/guilds/{self.id}/roles", "POST", json=kwargs),"guild_id":self.id},self.__bot)
 
 class Channel:
