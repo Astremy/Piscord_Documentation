@@ -49,3 +49,5 @@ html_static_path = ['_static']
 html_show_sourcelink = False
 
 html_logo = "_static/Piscord_Logo.png"
+
+master_doc = "index"
