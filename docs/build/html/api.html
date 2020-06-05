@@ -1,0 +1,284 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>API Elements &mdash; Piscord  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Piscord’s documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Piscord
+          
+
+          
+            
+            <img src="_static/Piscord_Logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Table of content</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#bot">Bot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#guild">Guild</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Piscord</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>API Elements</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="api-elements">
+<h1>API Elements<a class="headerlink" href="#api-elements" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="bot">
+<h2>Bot<a class="headerlink" href="#bot" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="API_Elements.Bot_Element">
+<em class="property">class </em><code class="sig-prename descclassname">API_Elements.</code><code class="sig-name descname">Bot_Element</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">bot_element</span></em>, <em class="sig-param"><span class="n">bot</span></em><span class="sig-paren">)</span><a class="headerlink" href="#API_Elements.Bot_Element" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represent the Bot</p>
+<dl class="simple">
+<dt>user: <code class="xref py py-class docutils literal notranslate"><span class="pre">User</span></code></dt><dd><p>The user corresponding to the bot (name, id, avatar)</p>
+</dd>
+<dt>guilds: <a class="reference internal" href="#API_Elements.Guild" title="API_Elements.Guild"><code class="xref py py-class docutils literal notranslate"><span class="pre">Guild</span></code></a></dt><dd><p>List of guilds where the bot is</p>
+</dd>
+<dt>relationships:</dt><dd><p>List of relationships of the bot (useless for real bot)</p>
+</dd>
+<dt>private_channels: <code class="xref py py-class docutils literal notranslate"><span class="pre">Channel</span></code></dt><dd><p>List of private channels of the bot</p>
+</dd>
+<dt>presences:</dt><dd><p>Not implemented : Presences of the users</p>
+</dd>
+<dt>voices:</dt><dd><p>List of Voice connexion of the bot</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="guild">
+<h2>Guild<a class="headerlink" href="#guild" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="API_Elements.Guild">
+<em class="property">class </em><code class="sig-prename descclassname">API_Elements.</code><code class="sig-name descname">Guild</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">guild</span></em>, <em class="sig-param"><span class="n">bot</span></em><span class="sig-paren">)</span><a class="headerlink" href="#API_Elements.Guild" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represent a discord server</p>
+<dl class="simple">
+<dt>id:</dt><dd><p>ID of the Guild</p>
+</dd>
+<dt>name:</dt><dd><p>Name of the Guild</p>
+</dd>
+<dt>icon:</dt><dd><p>The icon (image show on the guilds menu) of the Guild</p>
+</dd>
+<dt>splash:</dt><dd><p>The background invite image of the Guild</p>
+</dd>
+<dt>discovery_splash:</dt><dd><p>The background invite image of the Guild in discovery tab</p>
+</dd>
+<dt>owner:</dt><dd><p>If the user is the owner of the guild (see : <a class="reference external" href="https://discord.com/developers/docs/resources/user#get-current-user-guilds">https://discord.com/developers/docs/resources/user#get-current-user-guilds</a>)</p>
+</dd>
+<dt>owner_id:</dt><dd><p>If owner is not specified, the owner id of the Guild</p>
+</dd>
+<dt>permissions:</dt><dd><p>The permissions in Guild for the user (see : <a class="reference external" href="https://discord.com/developers/docs/resources/user#get-current-user-guilds">https://discord.com/developers/docs/resources/user#get-current-user-guilds</a>)</p>
+</dd>
+<dt>region:</dt><dd><p>Not implemented : Voice region of the guild</p>
+</dd>
+<dt>afk_channel_id:</dt><dd><p>The id of the afk voice channel</p>
+</dd>
+<dt>afk_timeout:</dt><dd><p>The time before an inactive user is sent to the afk voice channel</p>
+</dd>
+<dt>embed_enabled:</dt><dd><p>If the server widget is enabled (deprecated, replaced with widget_enabled)</p>
+</dd>
+<dt>embed_channel_id:</dt><dd><p>The channel id where the widget generate an invite (deprecated, replaced with widget_channel_id)</p>
+</dd>
+<dt>verification_level:</dt><dd><dl class="simple">
+<dt>The level of verification of the server</dt><dd><ul class="simple">
+<li><p>0 : Unrestricted</p></li>
+<li><p>1 : Need email verified</p></li>
+<li><p>2 : Register longer than 5 minutes</p></li>
+<li><p>3 : In the guild longer than 10 minutes</p></li>
+<li><p>4 : Must activate the 2FA (verified phone number)</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+<dt>default_message_notifications:</dt><dd><dl class="simple">
+<dt>The level of messages notification by default</dt><dd><ul class="simple">
+<li><p>0 : All messages</p></li>
+<li><p>1 : Mentions Only</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="Piscord’s documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Astremy
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

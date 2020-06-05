@@ -1,0 +1,629 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>API_Elements &#8212; Piscord  documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for API_Elements</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">aiohttp</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="k">class</span> <span class="nc">Cache</span><span class="p">:</span>
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">func</span> <span class="o">=</span> <span class="n">func</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+
+	<span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ref</span><span class="p">):</span>
+		<span class="k">if</span> <span class="n">ref</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">ref</span><span class="p">]</span>
+		<span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">ref</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+		<span class="k">return</span> <span class="n">result</span>
+
+<span class="k">class</span> <span class="nc">API_Element</span><span class="p">:</span>
+
+	<span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="n">output</span> <span class="o">=</span> <span class="p">{}</span>
+		<span class="k">for</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+			<span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;__bot&quot;</span><span class="p">):</span><span class="k">continue</span>
+			<span class="k">if</span> <span class="n">y</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
+					<span class="n">e</span><span class="o">=</span><span class="p">[]</span>
+					<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">y</span><span class="p">:</span>
+						<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">API_Element</span><span class="p">):</span>
+							<span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">to_json</span><span class="p">()</span>
+						<span class="n">e</span> <span class="o">+=</span> <span class="p">[</span><span class="n">p</span><span class="p">]</span>
+					<span class="n">y</span> <span class="o">=</span> <span class="n">e</span>
+				<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">API_Element</span><span class="p">):</span>
+					<span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">to_json</span><span class="p">()</span>
+				<span class="n">output</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">=</span><span class="n">y</span>
+		<span class="k">return</span> <span class="n">output</span>
+
+
+<div class="viewcode-block" id="Bot_Element"><a class="viewcode-back" href="../api.html#API_Elements.Bot_Element">[docs]</a><span class="k">class</span> <span class="nc">Bot_Element</span><span class="p">:</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bot_element</span><span class="p">,</span> <span class="n">bot</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="n">bot_element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">,{}),</span> <span class="n">bot</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">guilds</span> <span class="o">=</span> <span class="p">[</span><span class="n">Guild</span><span class="p">(</span><span class="n">guild</span><span class="p">,</span> <span class="n">bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">guild</span> <span class="ow">in</span> <span class="n">bot_element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;guilds&quot;</span><span class="p">,[])]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">relationships</span> <span class="o">=</span> <span class="n">bot_element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;relationships&quot;</span><span class="p">,[])</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">private_channels</span> <span class="o">=</span> <span class="n">bot_element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;private_channels&quot;</span><span class="p">,[])</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">presences</span> <span class="o">=</span> <span class="n">bot_element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;presences&quot;</span><span class="p">,[])</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">voices</span> <span class="o">=</span> <span class="p">{}</span>
+
+	<span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">name</span></div>
+
+<div class="viewcode-block" id="Guild"><a class="viewcode-back" href="../api.html#API_Elements.Guild">[docs]</a><span class="k">class</span> <span class="nc">Guild</span><span class="p">:</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guild</span><span class="p">,</span> <span class="n">bot</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">icon</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;icon&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">splash</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;splash&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">discovery_splash</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;discovery_splash&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">owner</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;owner&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">owner_id</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;owner_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">permissions</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;permissions&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;region&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">afk_channel_id</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;afk_channel_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">afk_timeout</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;afk_timeout&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">embed_enabled</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embed_enabled&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">embed_channel_id</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embed_channel_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">verification_level</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;verification_level&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">default_message_notifications</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;default_message_notifications&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">explicit_content_filter</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;explicit_content_filter&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">roles</span> <span class="o">=</span> <span class="p">[</span><span class="n">Role</span><span class="p">(</span><span class="n">role</span><span class="p">,</span><span class="n">bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">,[])]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">emojis</span> <span class="o">=</span> <span class="p">[</span><span class="n">Emoji</span><span class="p">(</span><span class="n">emoji</span><span class="p">)</span> <span class="k">for</span> <span class="n">emoji</span> <span class="ow">in</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;emojis&quot;</span><span class="p">,[])]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;features&quot;</span><span class="p">,[])</span> <span class="c1">#To Do</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mfa_level</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mfa_level&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">application_id</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;application_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">widget_enabled</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;widget_enabled&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">widget_channel_id</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;widget_channel_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">system_channel_id</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;system_channel_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">system_channel_flags</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;system_channel_flags&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">rules_channel_id</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rules_channel_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">joined_at</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;joined_at&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">large</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;large&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">unavailable</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;unavailable&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">member_count</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;member_count&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">voice_states</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;voice_states&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">members</span> <span class="o">=</span> <span class="p">[</span><span class="n">Member</span><span class="p">(</span><span class="n">member</span><span class="p">,</span><span class="n">bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">member</span> <span class="ow">in</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;members&quot;</span><span class="p">,[])]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">channels</span> <span class="o">=</span> <span class="p">[</span><span class="n">Channel</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="n">bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;channels&quot;</span><span class="p">,[])]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">presences</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;presences&quot;</span><span class="p">,[])</span> <span class="c1"># To Do</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">max_presences</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_presences&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">max_members</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_members&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">max_video_channel_users</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_video_channel_users&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">vanity_url_code</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;vanity_url_code&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">banner</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;banner&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">premium_tier</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;premium_tier&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">premium_subscription_count</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;premium_subscription_count&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">preferred_locale</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;preferred_locale&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">public_updates_channel_id</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;public_updates_channel_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">approximate_member_count</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;approximate_member_count&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">approximate_presence_count</span> <span class="o">=</span> <span class="n">guild</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;approximate_presence_count&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span> <span class="o">=</span> <span class="n">bot</span>
+
+	<span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+		<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">return</span> <span class="s2">&quot;Guild&quot;</span>
+
+	<span class="k">def</span> <span class="nf">get_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="n">channels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/channels&quot;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="p">[</span><span class="n">Channel</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">channels</span><span class="p">]</span>
+
+	<span class="k">def</span> <span class="nf">get_roles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="n">roles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/roles&quot;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="p">[</span><span class="n">Role</span><span class="p">(</span><span class="n">role</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">roles</span><span class="p">]</span>
+
+	<span class="k">def</span> <span class="nf">get_invites</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="n">invites</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/invites&quot;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="p">[</span><span class="n">Invite</span><span class="p">(</span><span class="n">invite</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">invite</span> <span class="ow">in</span> <span class="n">invites</span><span class="p">]</span>
+
+	<span class="k">def</span> <span class="nf">get_members</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">after</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+		<span class="n">members</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/members&quot;</span><span class="p">,</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span><span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;limit&quot;</span><span class="p">:</span><span class="n">limit</span><span class="p">,</span><span class="s2">&quot;after&quot;</span><span class="p">:</span><span class="n">after</span><span class="p">})</span>
+		<span class="k">return</span> <span class="p">[</span><span class="n">Member</span><span class="p">({</span><span class="o">**</span><span class="n">member</span><span class="p">,</span><span class="s2">&quot;guild_id&quot;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">},</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">member</span> <span class="ow">in</span> <span class="n">members</span><span class="p">]</span>
+
+	<span class="k">def</span> <span class="nf">get_member</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">user_id</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">Member</span><span class="p">({</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/members/</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span><span class="s2">&quot;guild_id&quot;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">},</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">get_bans</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="n">bans</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/bans&quot;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="p">[</span><span class="n">Ban</span><span class="p">(</span><span class="n">ban</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">ban</span> <span class="ow">in</span> <span class="n">bans</span><span class="p">]</span>
+
+	<span class="k">def</span> <span class="nf">get_ban</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">Ban</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/bans/</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Guild.create_channel"><a class="viewcode-back" href="../api.html#API_Elements.Guild.create_channel">[docs]</a>	<span class="k">def</span> <span class="nf">create_channel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39; kwargs : https://discord.com/developers/docs/resources/guild#create-guild-channel &#39;&#39;&#39;</span>
+		<span class="k">return</span> <span class="n">Channel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/channels&quot;</span><span class="p">,</span> <span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">kwargs</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Guild.create_role"><a class="viewcode-back" href="../api.html#API_Elements.Guild.create_role">[docs]</a>	<span class="k">def</span> <span class="nf">create_role</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39; kwargs : https://discord.com/developers/docs/resources/guild#create-guild-role &#39;&#39;&#39;</span>
+		<span class="k">return</span> <span class="n">Role</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/roles&quot;</span><span class="p">,</span> <span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">kwargs</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span></div></div>
+
+<span class="k">class</span> <span class="nc">Channel</span><span class="p">:</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">bot</span><span class="p">,</span> <span class="n">guild</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;guild_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;position&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">permission_overwrites</span> <span class="o">=</span> <span class="p">[</span><span class="n">Overwrite</span><span class="p">(</span><span class="n">overwrite</span><span class="p">,</span><span class="n">bot</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">for</span> <span class="n">overwrite</span> <span class="ow">in</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;permission_overwrites&quot;</span><span class="p">,[])]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">topic</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;topic&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">nsfw</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;nsfw&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">last_message_id</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;last_message_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">bitrate</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bitrate&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">user_limit</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user_limit&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">rate_limit_per_user</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rate_limit_per_user&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">recipients</span> <span class="o">=</span> <span class="p">[</span><span class="n">User</span><span class="p">(</span><span class="n">user</span><span class="p">,</span><span class="n">bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;recipients&quot;</span><span class="p">,[])]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">icon</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;icon&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">owner_id</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;owner_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">application_id</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;application_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">parent_id</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;parent_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">last_pin_timestamp</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;last_pin_timestamp&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">invites</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;invites&quot;</span><span class="p">,[])</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span> <span class="o">=</span> <span class="n">bot</span>
+
+		<span class="k">if</span> <span class="n">guild</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">guild</span> <span class="o">=</span> <span class="n">guild</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">guild</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">get_element</span><span class="p">(</span><span class="n">bot</span><span class="o">.</span><span class="n">guilds</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+		<span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+
+	<span class="k">def</span> <span class="nf">edit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">modifs</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;PATCH&quot;</span><span class="p">,</span><span class="n">json</span><span class="o">=</span><span class="n">modifs</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">content</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">files</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="k">if</span> <span class="n">files</span><span class="p">:</span>
+			<span class="n">form</span> <span class="o">=</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">FormData</span><span class="p">()</span>
+			<span class="n">form</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="s1">&#39;payload_json&#39;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">&quot;content&quot;</span><span class="p">:</span><span class="n">content</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">}))</span>
+			<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)):</span>
+				<span class="n">file</span> <span class="o">=</span> <span class="n">files</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+				<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+					<span class="n">c</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+				<span class="n">form</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;file </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">file</span><span class="p">)</span>
+			<span class="k">return</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/messages&quot;</span><span class="p">,</span> <span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">form</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/messages&quot;</span><span class="p">,</span> <span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;content&quot;</span><span class="p">:</span><span class="n">content</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">}),</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">get_messages</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="n">messages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/messages&quot;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="p">[</span><span class="n">Message</span><span class="p">(</span><span class="n">message</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">]</span>
+
+	<span class="k">def</span> <span class="nf">get_invites</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="n">invites</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/invites&quot;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="p">[</span><span class="n">Invite</span><span class="p">(</span><span class="n">invite</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">invite</span> <span class="ow">in</span> <span class="n">invites</span><span class="p">]</span>
+
+	<span class="k">def</span> <span class="nf">create_invite</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">Invite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/invites&quot;</span><span class="p">,</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span><span class="n">json</span><span class="o">=</span><span class="n">kwargs</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">typing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/typing&quot;</span><span class="p">,</span><span class="s2">&quot;POST&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Message</span><span class="p">:</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">bot</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;channel_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;guild_id&quot;</span><span class="p">)</span>
+		<span class="k">if</span> <span class="s2">&quot;author&quot;</span> <span class="ow">in</span> <span class="n">message</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">author</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;author&quot;</span><span class="p">],</span><span class="n">bot</span><span class="p">)</span>
+		<span class="k">if</span> <span class="s2">&quot;member&quot;</span> <span class="ow">in</span> <span class="n">message</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">author</span> <span class="o">=</span> <span class="n">Member</span><span class="p">({</span><span class="o">**</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;member&quot;</span><span class="p">],</span><span class="s2">&quot;user&quot;</span><span class="p">:{</span><span class="o">**</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;author&quot;</span><span class="p">]},</span><span class="s2">&quot;guild_id&quot;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span><span class="p">},</span> <span class="n">bot</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">content</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;timestamp&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">edited_timestamp</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;edited_timestamp&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">tts</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tts&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mention_everyone</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mention_everyone&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mentions</span> <span class="o">=</span> <span class="p">[</span><span class="n">User</span><span class="p">(</span><span class="n">mention</span><span class="p">,</span><span class="n">bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">mention</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mentions&quot;</span><span class="p">,[])]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mentions_roles</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mention_roles&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mention_channels</span> <span class="o">=</span> <span class="p">[</span><span class="n">Channel</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="n">bot</span><span class="p">)</span> <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mention_channels&quot;</span><span class="p">,[])]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">attachments</span> <span class="o">=</span> <span class="p">[</span><span class="n">Attachment</span><span class="p">(</span><span class="n">attachment</span><span class="p">)</span> <span class="k">for</span> <span class="n">attachment</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;attachments&quot;</span><span class="p">,[])]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">embeds</span> <span class="o">=</span> <span class="p">[</span><span class="n">Embed</span><span class="p">(</span><span class="n">embed</span><span class="p">)</span> <span class="k">for</span> <span class="n">embed</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embeds&quot;</span><span class="p">,[])]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reactions</span> <span class="o">=</span> <span class="p">[</span><span class="n">Reaction</span><span class="p">(</span><span class="n">reaction</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">for</span> <span class="n">reaction</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reactions&quot;</span><span class="p">,[])]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">nonce</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;nonce&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">pinned</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pinned&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">webhook_id</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;webhook_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">activity</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;activity&quot;</span><span class="p">)</span> <span class="c1"># Object</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">application</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;application&quot;</span><span class="p">)</span> <span class="c1">#Object</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">message_reference</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message_reference&quot;</span><span class="p">)</span> <span class="c1">#Object</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;flags&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span> <span class="o">=</span> <span class="n">bot</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">guild</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">get_element</span><span class="p">(</span><span class="n">bot</span><span class="o">.</span><span class="n">guilds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span><span class="p">)</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">guild</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">get_element</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">guild</span><span class="o">.</span><span class="n">channels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">get_element</span><span class="p">(</span><span class="n">bot</span><span class="o">.</span><span class="n">private_channels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">content</span>
+
+	<span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="si">}</span><span class="s2">/messages/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;DELETE&quot;</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">edit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">modifs</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="si">}</span><span class="s2">/messages/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;PATCH&quot;</span><span class="p">,</span><span class="n">json</span><span class="o">=</span><span class="n">modifs</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">add_reaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reaction</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="si">}</span><span class="s2">/messages/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/reactions/</span><span class="si">{</span><span class="n">reaction</span><span class="si">}</span><span class="s2">/@me&quot;</span><span class="p">,</span><span class="s2">&quot;PUT&quot;</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">delete_reactions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="si">}</span><span class="s2">/messages/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/reactions&quot;</span><span class="p">,</span><span class="s2">&quot;DELETE&quot;</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">delete_self_reaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reaction</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="si">}</span><span class="s2">/messages/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/reactions/</span><span class="si">{</span><span class="n">reaction</span><span class="si">}</span><span class="s2">/@me&quot;</span><span class="p">,</span><span class="s2">&quot;DELETE&quot;</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">delete_reaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">reaction</span><span class="p">,</span><span class="n">user_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">emoji</span><span class="p">,</span> <span class="n">Emoji</span><span class="p">):</span>
+			<span class="n">reaction</span> <span class="o">=</span> <span class="n">emoji</span><span class="o">.</span><span class="n">get_reaction</span><span class="p">()</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">reaction</span> <span class="o">=</span> <span class="n">emoji</span>
+		<span class="k">if</span> <span class="n">user_id</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="si">}</span><span class="s2">/messages/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/reactions/</span><span class="si">{</span><span class="n">reaction</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;DELETE&quot;</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="si">}</span><span class="s2">/messages/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/reactions/</span><span class="si">{</span><span class="n">reaction</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;DELETE&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">User</span><span class="p">:</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">bot</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">bot</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bot&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">system</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;system&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mfa_enabled</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mfa_enabled&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">locale</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;locale&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">verified</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;verified&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">email</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;flags&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">premium_type</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;premium_type&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">public_flags</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;public_flags&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;username&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">discriminator</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;discriminator&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">avatar</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;avatar&quot;</span><span class="p">)</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">avatar</span><span class="p">:</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">avatar</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;a_&quot;</span><span class="p">):</span>
+				<span class="n">avatar_type</span> <span class="o">=</span> <span class="s2">&quot;.gif&quot;</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">avatar_type</span> <span class="o">=</span> <span class="s2">&quot;.png&quot;</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">avatar</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;https://cdn.discordapp.com/avatars/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">avatar</span><span class="si">}{</span><span class="n">avatar_type</span><span class="si">}</span><span class="s2">&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mention</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&lt;@</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span> <span class="o">=</span> <span class="n">bot</span>
+
+	<span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+	<span class="nd">@property</span>
+	<span class="nd">@Cache</span>
+	<span class="k">def</span> <span class="nf">dm</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">Channel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/users/@me/channels&quot;</span><span class="p">,</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span><span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;recipient_id&quot;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">}),</span><span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Member</span><span class="p">(</span><span class="n">User</span><span class="p">):</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">member</span><span class="p">,</span> <span class="n">bot</span><span class="p">):</span>
+		<span class="k">if</span> <span class="s2">&quot;user&quot;</span> <span class="ow">in</span> <span class="n">member</span><span class="p">:</span>
+			<span class="n">User</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">member</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">],</span><span class="n">bot</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span> <span class="o">=</span> <span class="n">member</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;guild_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">premium_since</span> <span class="o">=</span> <span class="n">member</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;premium_since&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">roles</span> <span class="o">=</span> <span class="p">[</span><span class="n">role</span> <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">member</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">,[])]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">hoisted_role</span> <span class="o">=</span> <span class="n">member</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hoisted_role&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mute</span> <span class="o">=</span> <span class="n">member</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mute&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">deaf</span> <span class="o">=</span> <span class="n">member</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;deaf&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">nick</span> <span class="o">=</span> <span class="n">member</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;nick&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">joined_at</span> <span class="o">=</span> <span class="n">member</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;joined_at&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span> <span class="o">=</span> <span class="n">bot</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">guild</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">get_element</span><span class="p">(</span><span class="n">bot</span><span class="o">.</span><span class="n">guilds</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">edit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">modifs</span><span class="p">):</span>
+		<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s2">&quot;id&quot;</span><span class="p">):</span>
+			<span class="n">user_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span><span class="si">}</span><span class="s2">/messages/</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;PATCH&quot;</span><span class="p">,</span><span class="n">json</span><span class="o">=</span><span class="n">modifs</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">kick</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s2">&quot;id&quot;</span><span class="p">):</span>
+			<span class="n">user_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+			<span class="n">delete_member</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span><span class="si">}</span><span class="s2">/members/</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;DELETE&quot;</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">ban</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+		<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s2">&quot;id&quot;</span><span class="p">):</span>
+			<span class="n">user_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span><span class="si">}</span><span class="s2">/bans/</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;PUT&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;reason&quot;</span><span class="p">:</span><span class="n">reason</span><span class="p">})</span>
+
+	<span class="k">def</span> <span class="nf">add_role</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">role</span><span class="p">):</span>
+		<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s2">&quot;id&quot;</span><span class="p">):</span>
+			<span class="n">user_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span><span class="si">}</span><span class="s2">/members/</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">/roles/</span><span class="si">{</span><span class="n">role</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;PUT&quot;</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">remove_role</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">role</span><span class="p">):</span>
+		<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s2">&quot;id&quot;</span><span class="p">):</span>
+			<span class="n">user_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span><span class="si">}</span><span class="s2">/members/</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">/roles/</span><span class="si">{</span><span class="n">role</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;DELETE&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Reaction</span><span class="p">:</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">reaction</span><span class="p">,</span><span class="n">message_id</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="n">reaction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;count&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">me</span> <span class="o">=</span> <span class="n">reaction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;me&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">emoji</span> <span class="o">=</span> <span class="n">Emoji</span><span class="p">(</span><span class="n">reaction</span><span class="p">[</span><span class="s2">&quot;emoji&quot;</span><span class="p">])</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">message_id</span> <span class="o">=</span> <span class="n">message_id</span>
+
+<span class="k">class</span> <span class="nc">Emoji</span><span class="p">(</span><span class="n">API_Element</span><span class="p">):</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">emoji</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">emoji</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">emoji</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">roles</span> <span class="o">=</span> <span class="n">emoji</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">emoji</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">require_colons</span> <span class="o">=</span> <span class="n">emoji</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;require_colons&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">managed</span> <span class="o">=</span> <span class="n">emoji</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;managed&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">animated</span> <span class="o">=</span> <span class="n">emoji</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;animated&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">available</span> <span class="o">=</span> <span class="n">emoji</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;available&quot;</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">react</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+	<span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
+
+<span class="k">class</span> <span class="nc">Role</span><span class="p">:</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">bot</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">role</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">role</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">role</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">hoist</span> <span class="o">=</span> <span class="n">role</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hoist&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">role</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;position&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">permissions</span> <span class="o">=</span> <span class="n">role</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;permissions&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">managed</span> <span class="o">=</span> <span class="n">role</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;managed&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mentionable</span> <span class="o">=</span> <span class="n">role</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mentionable&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span> <span class="o">=</span> <span class="n">role</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;guild_id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span> <span class="o">=</span> <span class="n">bot</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">guild</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">get_element</span><span class="p">(</span><span class="n">bot</span><span class="o">.</span><span class="n">guilds</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+	<span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span><span class="si">}</span><span class="s2">/roles/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;DELETE&quot;</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">edit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">modifs</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">guild_id</span><span class="si">}</span><span class="s2">/messages/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;PATCH&quot;</span><span class="p">,</span><span class="n">json</span><span class="o">=</span><span class="n">modifs</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Attachment</span><span class="p">(</span><span class="n">API_Element</span><span class="p">):</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attachment</span><span class="o">=</span><span class="p">{}):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">attachment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">attachment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filename&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">attachment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;size&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">attachment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;url&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">proxy_url</span> <span class="o">=</span> <span class="n">attachment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;proxy_url&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">attachment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;height&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">attachment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;width&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Allowed_Mentions</span><span class="p">(</span><span class="n">API_Element</span><span class="p">):</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mentions</span><span class="o">=</span><span class="p">{}):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">parse</span> <span class="o">=</span> <span class="n">mentions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;parse&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">roles</span> <span class="o">=</span> <span class="n">mentions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">users</span> <span class="o">=</span> <span class="n">mentions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Embed</span><span class="p">(</span><span class="n">API_Element</span><span class="p">):</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">embed</span><span class="o">=</span><span class="p">{}):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">embed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">embed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">embed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">embed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;url&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="n">embed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;timestamp&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">embed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">footer</span> <span class="o">=</span> <span class="n">Embed_Footer</span><span class="p">(</span><span class="n">embed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;footer&quot;</span><span class="p">,{}))</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="n">Embed_Image</span><span class="p">(</span><span class="n">embed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;image&quot;</span><span class="p">,{}))</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">thumbnail</span> <span class="o">=</span> <span class="n">Embed_Image</span><span class="p">(</span><span class="n">embed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;thumbnail&quot;</span><span class="p">,{}))</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">video</span> <span class="o">=</span> <span class="n">Embed_Image</span><span class="p">(</span><span class="n">embed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;video&quot;</span><span class="p">,{}))</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">provider</span> <span class="o">=</span> <span class="n">Embed_Provider</span><span class="p">(</span><span class="n">embed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;provider&quot;</span><span class="p">,{}))</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">author</span> <span class="o">=</span> <span class="n">Embed_Author</span><span class="p">(</span><span class="n">embed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;author&quot;</span><span class="p">,{}))</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="n">Embed_Field</span><span class="p">(</span><span class="n">field</span><span class="p">)</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">embed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fields&quot;</span><span class="p">,[])]</span>
+
+	<span class="k">def</span> <span class="nf">add_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Embed_Field</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="k">class</span> <span class="nc">Embed_Image</span><span class="p">(</span><span class="n">API_Element</span><span class="p">):</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">image</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;url&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">proxy_url</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;proxy_url&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;height&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;width&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Embed_Field</span><span class="p">(</span><span class="n">API_Element</span><span class="p">):</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">field</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">inline</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;inline&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Embed_Footer</span><span class="p">(</span><span class="n">API_Element</span><span class="p">):</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">footer</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">footer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">icon_url</span> <span class="o">=</span> <span class="n">footer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;icon_url&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">proxy_icon_url</span> <span class="o">=</span> <span class="n">footer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;proxy_icon_url&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Embed_Provider</span><span class="p">(</span><span class="n">API_Element</span><span class="p">):</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">provider</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">provider</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">provider</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;url&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Embed_Author</span><span class="p">(</span><span class="n">API_Element</span><span class="p">):</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">author</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">author</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">author</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;url&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">icon_url</span> <span class="o">=</span> <span class="n">author</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;icon_url&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">proxy_icon_url</span> <span class="o">=</span> <span class="n">author</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;proxy_icon_url&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Invite</span><span class="p">:</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">invite</span><span class="p">,</span> <span class="n">bot</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">code</span> <span class="o">=</span> <span class="n">invite</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;code&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;https://discord.gg/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">code</span><span class="si">}</span><span class="s2">&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">guild</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="k">if</span> <span class="s2">&quot;guild&quot;</span> <span class="ow">in</span> <span class="n">invite</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">guild</span> <span class="o">=</span> <span class="n">Guild</span><span class="p">(</span><span class="n">invite</span><span class="p">[</span><span class="s2">&quot;guild&quot;</span><span class="p">],</span> <span class="n">bot</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="k">if</span> <span class="s2">&quot;channel&quot;</span> <span class="ow">in</span> <span class="n">invite</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="n">Channel</span><span class="p">(</span><span class="n">invite</span><span class="p">[</span><span class="s2">&quot;channel&quot;</span><span class="p">],</span> <span class="n">bot</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">inviter</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="k">if</span> <span class="s2">&quot;inviter&quot;</span> <span class="ow">in</span> <span class="n">invite</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">inviter</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="n">invite</span><span class="p">[</span><span class="s2">&quot;inviter&quot;</span><span class="p">],</span> <span class="n">bot</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">target_user</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="k">if</span> <span class="s2">&quot;target_user&quot;</span> <span class="ow">in</span> <span class="n">invite</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="n">invite</span><span class="p">[</span><span class="s2">&quot;target_user&quot;</span><span class="p">],</span> <span class="n">bot</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">target_user_type</span> <span class="o">=</span> <span class="n">invite</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;target_user_type&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">approximate_presence_count</span> <span class="o">=</span> <span class="n">invite</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;approximate_presence_count&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">approximate_member_count</span> <span class="o">=</span> <span class="n">invite</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;approximate_member_count&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">max_age</span> <span class="o">=</span> <span class="n">invite</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_age&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">max_uses</span> <span class="o">=</span> <span class="n">invite</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_uses&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">temporary</span> <span class="o">=</span> <span class="n">invite</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;temporary&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">uses</span> <span class="o">=</span> <span class="n">invite</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;uses&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">created_at</span> <span class="o">=</span> <span class="n">invite</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;created_at&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span> <span class="o">=</span> <span class="n">bot</span>
+
+	<span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span>
+
+	<span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/invites/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;DELETE&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Ban</span><span class="p">:</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ban</span><span class="p">,</span><span class="n">bot</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reason</span> <span class="o">=</span> <span class="n">ban</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reason&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="n">ban</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">])</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span> <span class="o">=</span> <span class="n">bot</span>
+
+	<span class="k">def</span> <span class="nf">pardon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guild_id</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/guilds/</span><span class="si">{</span><span class="n">guild_id</span><span class="si">}</span><span class="s2">/bans/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;DELETE&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Overwrite</span><span class="p">(</span><span class="n">API_Element</span><span class="p">):</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">overwrite</span><span class="p">,</span><span class="n">bot</span><span class="p">,</span><span class="n">channel_id</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">overwrite</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">overwrite</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">allow</span> <span class="o">=</span> <span class="n">overwrite</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;allow&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">deny</span> <span class="o">=</span> <span class="n">overwrite</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;deny&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span> <span class="o">=</span> <span class="n">channel_id</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span> <span class="o">=</span> <span class="n">bot</span>
+
+	<span class="k">def</span> <span class="nf">edit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">modifs</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="si">}</span><span class="s2">/permissions/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;PUT&quot;</span><span class="p">,</span><span class="n">json</span><span class="o">=</span><span class="n">modifs</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">__bot</span><span class="o">.</span><span class="n">api</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/channels/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="si">}</span><span class="s2">/permissions/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot;DELETE&quot;</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Piscord</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Table of content</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Elements</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Astremy.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.0.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
