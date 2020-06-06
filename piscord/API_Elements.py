@@ -334,6 +334,58 @@ class Guild:
 
 class Channel:
 
+	"""
+	Represent a discord channel
+
+	id:
+		ID of the Channel
+	type:
+		The type of the channel
+			0 : Text channel of a Guild
+			1 : DM channel
+			2 : Voice channel of a Guild
+			3 : DM group channel
+			4 : Category
+			5 : News channel
+			6 : Store channel
+	guild_id:
+		The guild id of the channel (if is not a dm channel)
+	position:
+		The channel position in the guild channels
+	permission_overwrites:
+		The permissions for members and roles in the channel
+	name:
+		Name of the channel
+	topic:
+		The channel topic
+	nsfw:
+		If the channel is or not a nsfw channel
+	last_message_id:
+		The id of the last channel message
+	bitrate:
+		The bitrate of the channel (if this is a voice channel)
+	user_limit:
+		The limit of users in the channel (if this is a voice channel)
+	rate_limit_per_user:
+		The time between two messages, in seconds
+	recipients: :class:`User`
+		The DM group users
+	icon:
+		The icon of the DM group
+	owner_id:
+		The id of the DM group owner
+	application_id:
+		If a bot created the DM group, the id of its application
+	parent_id:
+		If the channel is in a category, the category id
+	last_pin_timestamp:
+		timestamp when the last pinned message was pinned
+	invites: :class:`Invite`
+		List of channel invites
+	guild: :class:`Guild`
+		The guild of the channel
+	"""
+
 	def __init__(self, channel, bot, guild = None):
 		self.id = channel.get("id")
 		self.type = channel.get("type")
@@ -366,9 +418,28 @@ class Channel:
 		else: return self.id
 
 	def edit(self,**modifs):
+
+		"""
+		Modify channels, with parameters.
+		Parameters : https://discord.com/developers/docs/resources/channel#modify-channel
+		"""
+
 		self.__bot.api(f"/channels/{self.id}","PATCH",json=modifs)
 
 	def send(self,content=None,files=None,**kwargs):
+
+		"""
+		Send a message in the channels, with parameters.
+		Parameters : https://discord.com/developers/docs/resources/channel#create-message
+
+		By default, when not kwarg specified, arg is the content.
+
+		Use send(files=["name_1","name_2"]) to send files by their names
+		Use send(files=[[b"data_2","title_1"],[b"data_2","title_2"]]) to send files by their data
+
+		Return :class:`Message`
+		"""
+
 		if files:
 			form = aiohttp.FormData()
 			form.add_field('payload_json', json.dumps({"content":content,**kwargs}))
@@ -381,30 +452,93 @@ class Channel:
 					c = file[0]
 					file = file[1]
 				else:
-					raise TypeError("File should be a list or a string")
+					raise TypeError("Files should be a list or a string")
 				form.add_field(f"file {i}", c, filename=file)
 			return Message(self.__bot.api(f"/channels/{self.id}/messages", "POST", data=form),self.__bot)
 		return Message(self.__bot.api(f"/channels/{self.id}/messages", "POST", json={"content":content,**kwargs}),self.__bot)
 
-	def get_messages(self):
-		messages = self.__bot.api(f"/channels/{self.id}/messages")
+	def get_messages(self,limit=50,before=None,after=None):
+
+		"""
+		Get list of messages in the channel
+
+		limit:
+			The max number of messages return (max : 100)
+		before:
+			ID of a message : Retrieves messages that are before the message
+		after:
+			ID of a message : Retrieves messages that are after the message
+
+		Return List of :class:`Message`
+		"""
+
+		messages = self.__bot.api(f"/channels/{self.id}/messages","GET",params={"limit":limit,"before":before,"after":after})
 		return [Message(message,self.__bot) for message in messages]
 
+	def get_message(self,message_id):
+
+		"""
+		Get specific message of the channel with it id
+
+		Return :class:`Message`
+		"""
+
+		return Message(self.__bot.api(f"/channels/{self.id}/messages/{message_id}"),self.__bot)
+
 	def get_invites(self):
+
+		"""
+		Get list of invites of the channel
+
+		Return List of :class:`Invite`
+		"""
+
 		invites = self.__bot.api(f"/channels/{self.id}/invites")
 		return [Invite(invite,self.__bot) for invite in invites]
 
 	def get_webhooks(self):
+
+		"""
+		Get list of webhooks of the channel
+
+		Return List of :class:`Webhook`
+		"""
+
 		webhooks = self.__bot.api(f"/channels/{self.id}/webhooks")
 		return [Webhook(webhook,self.__bot) for webhook in webhooks]
 
 	def create_invite(self,**kwargs):
+
+		"""
+		Create a guild invite for the channel, with parameters
+		Parameters : https://discord.com/developers/docs/resources/channel#create-channel-invite
+
+		Return :class:`Invite`
+		"""
+
 		return Invite(self.__bot.api(f"/channels/{self.id}/invites","POST",json=kwargs),self.__bot)
 
 	def create_webhook(self,name,avatar=None):
+
+		"""
+		Create a webhook for the channel
+		
+		name:
+			The name of the webhook
+		avatar:
+			The avatar image data (see : https://discord.com/developers/docs/reference#image-data) of the webhook
+
+		Return :class:`Webhook`
+		"""
+
 		return Webhook(self.__bot.api(f"/channels/{self.id}/webhooks","POST",json={"name":name,"avatar":avatar}),self.__bot,channel=self)
 
 	def typing(self):
+
+		"""
+		Send a "typing" event in the channel ('bot typing...') until the bot sends a message
+		"""
+
 		self.__bot.api(f"/channels/{self.id}/typing","POST")
 
 class Message:
